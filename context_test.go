@@ -135,6 +135,9 @@ func TestContextTpl5xx(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if res.StatusCode != http.StatusInternalServerError {
+		t.Error("status code ", res.StatusCode, "!=", http.StatusInternalServerError)
+	}
 	ct, ok := res.Header["Content-Type"]
 	if !ok {
 		t.Error("Response no Content-Type")

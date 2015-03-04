@@ -84,6 +84,11 @@ func (c *httpContext) Tpl(path string, data interface{}) {
 	default:
 		h := c.Res().Header()
 		h.Add("content-type", "text/html")
-		Render(c.Res(), tpl, data)
+		t, name, err := LoadTpl(tpl)
+		if err != nil {
+			c.Res().WriteHeader(http.StatusInternalServerError)
+			Render5xx(c.Res(), err)
+		}
+		Render(c.Res(), t, name, data)
 	}
 }
