@@ -126,8 +126,15 @@ func flagParams() (confFilename string) {
 	return
 }
 
-func App() context.Context {
-	ctx := initial()
+func App(args ...string) context.Context {
+	var (
+		ctx *MuxContext
+	)
+	if len(args) == 0 {
+		ctx = initial()
+	} else {
+		ctx = bootstrap(args[0])
+	}
 
 	go func() {
 		err := http.ListenAndServe(":"+ctx.Conf().Env.Port, ctx) //设置监听的端口
