@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func TestParseRule(t *testing.T) {
@@ -63,6 +64,28 @@ func TestCustomMuxHttpHandle(t *testing.T) {
 
 }
 
-func TestLoadCfg(t *testing.T) {
+func TestTimeout(t *testing.T) {
+
+	confFilename, _ := filepath.Abs("test/app.yaml")
+	cm := bootstrap(confFilename)
+	Get("/test/:x", func(ctx Context) {
+		time.Sleep(10 * time.Second)
+		ctx.Json(ctx.Params())
+	})
+
+	ts := httptest.NewServer(http.HandlerFunc(cm.ServeHTTP))
+	defer ts.Close()
+
+	res, err := http.Get(ts.URL + "/test/abc")
+	if err != nil {
+		log.Fatal(err)
+	}
+	res.Body.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if res.StatusCode != http.StatusGatewayTimeout {
+		t.Error("status code ", res.StatusCode, "!=", http.StatusGatewayTimeout)
+	}
 
 }

@@ -26,6 +26,7 @@ type AppCfg struct {
 		Port     string
 		Level    string
 		Tpl      string
+		Timeout  time.Duration
 	}
 }
 
@@ -129,12 +130,7 @@ func App() context.Context {
 	ctx := initial()
 
 	go func() {
-		cfg, ok := ctx.Value("cfg").(AppCfg)
-		if !ok {
-			log.Print("configuration not ok")
-			return
-		}
-		err := http.ListenAndServe(":"+cfg.Env.Port, ctx) //设置监听的端口
+		err := http.ListenAndServe(":"+ctx.Conf().Env.Port, ctx) //设置监听的端口
 		if err != nil {
 			log.Print(err)
 		}
@@ -227,6 +223,11 @@ type MuxContext struct {
 	context.Context
 }
 
+func (p *MuxContext) Conf() AppCfg {
+	cfg, _ := p.Value("cfg").(AppCfg)
+	return cfg
+}
+
 func (p *MuxContext) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	list, exist := routeList[r.Method]
 	if !exist {
@@ -234,8 +235,11 @@ func (p *MuxContext) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var ctx context.Context
-	ctx, cancel := context.WithTimeout(p, 5*time.Second)
+	var (
+		ctx     context.Context
+		timeout bool = true
+	)
+	ctx, cancel := context.WithTimeout(p, p.Conf().Env.Timeout*time.Millisecond)
 	defer cancel()
 
 	for _, v := range list {
@@ -252,11 +256,15 @@ func (p *MuxContext) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if len(res) > 0 {
 			go func() {
 				v.controller(WithHttp(ctx, w, r, params))
+				timeout = false
 				cancel()
 			}()
 			break
 		}
 	}
 	<-ctx.Done()
+	if timeout {
+		w.WriteHeader(http.StatusGatewayTimeout)
+	}
 	return
 }

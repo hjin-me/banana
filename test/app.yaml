@@ -3,3 +3,4 @@ env:
     level: test
     statics : statics
     tpl: views
+    timeout : 30
