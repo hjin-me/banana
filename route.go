@@ -245,8 +245,13 @@ func (p *MuxContext) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var (
 		ctx     context.Context
 		timeout bool = true
+		cancel  func()
 	)
-	ctx, cancel := context.WithTimeout(p, p.Conf().Env.Timeout*time.Millisecond)
+	if p.Conf().Env.Timeout == 0 {
+		ctx, cancel = context.WithCancel(p)
+	} else {
+		ctx, cancel = context.WithTimeout(p, p.Conf().Env.Timeout*time.Millisecond)
+	}
 	defer cancel()
 
 	for _, v := range list {
