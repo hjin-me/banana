@@ -1,80 +1,20 @@
 package banana
 
 import (
-	"errors"
-	"flag"
-	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
-	"path/filepath"
 	"regexp"
-	"time"
-
-	"runtime"
-
-	"golang.org/x/net/context"
-	"gopkg.in/yaml.v2"
 )
 
+type routeInfo struct {
+	regex      *regexp.Regexp
+	controller ControllerType
+	nameList   []string
+}
+
+type ControllerType func(ctx Context)
+
 var routeList map[string][]routeInfo
-
-type AppCfg struct {
-	Env struct {
-		ConfRoot string
-		Port     string
-		Level    string
-		Tpl      string
-		Timeout  time.Duration
-	}
-}
-
-func checkDir(base, in string) (string, error) {
-
-	if !filepath.IsAbs(in) {
-		in = filepath.Join(base, in)
-	}
-	fi, err := os.Lstat(in)
-	if err != nil {
-		log.Println(err, base, in)
-		return "", err
-	}
-	if !fi.IsDir() {
-		emsg := fmt.Sprintf("%s: should be directory\n", in)
-		log.Printf(emsg)
-		return "", errors.New(emsg)
-	}
-
-	return in, nil
-}
-
-func loadCfg(filename string) (cfg AppCfg) {
-	filename, err := filepath.Abs(filename)
-	if err != nil {
-		log.Fatalln("config file path error", err)
-	}
-	f, err := os.Open(filename)
-	if err != nil {
-		log.Fatalln("open config file failed", err)
-	}
-	defer f.Close()
-	bf, err := ioutil.ReadAll(f)
-	if err != nil {
-		log.Fatalln("read config file failed", err)
-	}
-	err = yaml.Unmarshal(bf, &cfg)
-	if err != nil {
-		log.Fatalln("load config fail", err)
-	}
-	cfg.Env.ConfRoot = filepath.Dir(filename)
-	cfg.Env.Tpl, err = checkDir(cfg.Env.ConfRoot, cfg.Env.Tpl)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	return
-
-}
 
 func parseRule(rule string) (*regexp.Regexp, []string, error) {
 	nameList := []string{}
@@ -101,48 +41,6 @@ func parseRule(rule string) (*regexp.Regexp, []string, error) {
 		return reg, nameList, err
 	}
 	return reg, nameList, nil
-}
-
-func initial() *MuxContext {
-	return bootstrap(flagParams())
-}
-
-func bootstrap(confFilename string) *MuxContext {
-	runtime.GOMAXPROCS(runtime.NumCPU())
-	routeList = make(map[string][]routeInfo)
-
-	cfg := loadCfg(confFilename)
-
-	return &MuxContext{context.WithValue(context.Background(), "cfg", cfg)}
-}
-
-func flagParams() (confFilename string) {
-	f := flag.NewFlagSet("params", flag.ExitOnError)
-	f.StringVar(&confFilename, "c", "./app.yaml", "server configuration")
-
-	if err := f.Parse(os.Args[1:]); err != nil {
-		panic(err)
-	}
-	return
-}
-
-func App(args ...string) context.Context {
-	var (
-		ctx *MuxContext
-	)
-	if len(args) == 0 {
-		ctx = initial()
-	} else {
-		ctx = bootstrap(args[0])
-	}
-
-	go func() {
-		err := http.ListenAndServe(":"+ctx.Conf().Env.Port, ctx) //设置监听的端口
-		if err != nil {
-			log.Print(err)
-		}
-	}()
-	return ctx
 }
 
 func Put(pattern string, fn ControllerType) {
@@ -214,69 +112,4 @@ func add(method, pattern string, fn ControllerType) {
 	}
 
 	routeList[method] = append(routeList[method], rInfo)
-}
-
-type routeInfo struct {
-	regex      *regexp.Regexp
-	controller ControllerType
-	nameList   []string
-}
-
-type ControllerType func(ctx Context)
-
-type controllerType func(http.ResponseWriter, *http.Request)
-
-type MuxContext struct {
-	context.Context
-}
-
-func (p *MuxContext) Conf() AppCfg {
-	cfg, _ := p.Value("cfg").(AppCfg)
-	return cfg
-}
-
-func (p *MuxContext) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	list, exist := routeList[r.Method]
-	if !exist {
-		http.NotFound(w, r)
-		return
-	}
-
-	var (
-		ctx     context.Context
-		timeout bool = true
-		cancel  func()
-	)
-	if p.Conf().Env.Timeout == 0 {
-		ctx, cancel = context.WithCancel(p)
-	} else {
-		ctx, cancel = context.WithTimeout(p, p.Conf().Env.Timeout*time.Millisecond)
-	}
-	defer cancel()
-
-	for _, v := range list {
-		res := v.regex.FindStringSubmatch(r.URL.Path)
-
-		params := make(map[string]string)
-		for k, v := range v.nameList {
-			if len(res) > k+1 {
-				params[v] = res[k+1]
-			} else {
-				params[v] = ""
-			}
-		}
-		if len(res) > 0 {
-			go func() {
-				v.controller(WithHttp(ctx, w, r, params))
-				timeout = false
-				cancel()
-			}()
-			break
-		}
-	}
-	<-ctx.Done()
-	if timeout {
-		w.WriteHeader(http.StatusGatewayTimeout)
-	}
-	return
 }
