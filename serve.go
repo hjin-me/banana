@@ -1,6 +1,7 @@
 package banana
 
 import (
+	"log"
 	"net/http"
 	"runtime"
 	"time"
@@ -49,9 +50,15 @@ func (p *MuxContext) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		if len(res) > 0 {
 			go func() {
+				defer func() {
+					if err := recover(); err != nil {
+						log.Println(err)
+						w.WriteHeader(http.StatusInternalServerError)
+					}
+					timeout = false
+					cancel()
+				}()
 				v.controller(WithHttp(ctx, w, r, params))
-				timeout = false
-				cancel()
 			}()
 			break
 		}
