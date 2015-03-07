@@ -9,5 +9,7 @@ type AppCfg struct {
 		Level    string
 		Tpl      string
 		Timeout  time.Duration
+		Statics  string
+		Db       map[string]interface{}
 	}
 }

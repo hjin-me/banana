@@ -2,10 +2,13 @@ package banana
 
 import (
 	"errors"
+	"fmt"
 	"html/template"
 	"io"
 	"io/ioutil"
 	"log"
+
+	"github.com/russross/blackfriday"
 )
 
 var (
@@ -16,7 +19,11 @@ var (
 
 func LoadTpl(path string) (*template.Template, string, error) {
 	var err error
-	tc := template.New(path)
+
+	funcMaps := template.FuncMap{
+		"md": markDowner,
+	}
+	tc := template.New(path).Funcs(funcMaps)
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
 		log.Println("load tpl failed:", err)
@@ -38,4 +45,9 @@ func Render5xx(w io.Writer, err error) {
 
 func Render(w io.Writer, t *template.Template, name string, data interface{}) {
 	t.ExecuteTemplate(w, name, data)
+}
+
+func markDowner(args ...interface{}) template.HTML {
+	s := blackfriday.MarkdownCommon([]byte(fmt.Sprintf("%s", args...)))
+	return template.HTML(s)
 }
