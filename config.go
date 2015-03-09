@@ -4,6 +4,8 @@ import (
 	"errors"
 	"io/ioutil"
 	"os"
+	"path/filepath"
+	"reflect"
 	"sync"
 	"time"
 
@@ -15,6 +17,38 @@ var (
 	configCacheMap map[string][]byte = make(map[string][]byte)
 	mutex          *sync.Mutex       = &sync.Mutex{}
 )
+
+func configScan(v reflect.Value, base string) {
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+	switch v.Kind() {
+	case reflect.Struct:
+		n := v.NumField()
+		t := v.Type()
+		for i := 0; i < n; i++ {
+			f := v.Field(i)
+			switch f.Kind() {
+			case reflect.Struct:
+				configScan(f, base)
+			case reflect.String:
+				tf := t.Field(i)
+				if s := tf.Tag.Get("banana"); s == "relative" && f.CanSet() {
+					f.SetString(filepath.Join(base, f.String()))
+				}
+			}
+		}
+	}
+}
+func configUnmarshal(bf []byte, data interface{}, filename string) (err error) {
+	err = yaml.Unmarshal(bf, data)
+	if err != nil {
+		return
+	}
+	rv := reflect.ValueOf(data)
+	configScan(rv, filepath.Dir(filename))
+	return
+}
 
 func Config(filename string, data interface{}) (err error) {
 	bf, ok := configCacheMap[filename]
@@ -46,7 +80,7 @@ func Config(filename string, data interface{}) (err error) {
 		configCacheMap[filename] = bf
 	}
 
-	err = yaml.Unmarshal(bf, data)
+	err = configUnmarshal(bf, data, filename)
 	if err != nil {
 		return err
 	}
