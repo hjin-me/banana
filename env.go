@@ -1,6 +1,9 @@
 package banana
 
-import "time"
+import (
+	"errors"
+	"time"
+)
 
 type AppCfg struct {
 	Env struct {
@@ -13,3 +16,9 @@ type AppCfg struct {
 		Db       map[string]interface{}
 	}
 }
+
+var (
+	ErrFileNotFound = errors.New("file not found")
+	ErrNotFile      = errors.New("path is not file ")
+	ErrNotDir       = errors.New("path is not dir")
+)
