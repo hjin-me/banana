@@ -4,14 +4,12 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 
 	"golang.org/x/net/context"
-	"gopkg.in/yaml.v2"
 )
 
 func App(args ...string) *MuxContext {
@@ -126,23 +124,9 @@ func loadCfg(filename string) (cfg AppCfg) {
 	if err != nil {
 		log.Fatalln("config file path error", err)
 	}
-	f, err := os.Open(filename)
-	if err != nil {
-		log.Fatalln("open config file failed", err)
-	}
-	defer f.Close()
-	bf, err := ioutil.ReadAll(f)
-	if err != nil {
-		log.Fatalln("read config file failed", err)
-	}
-	err = yaml.Unmarshal(bf, &cfg)
+	err = Config(filename, &cfg)
 	if err != nil {
 		log.Fatalln("load config fail", err)
-	}
-	cfg.Env.ConfRoot = filepath.Dir(filename)
-	cfg.Env.Tpl, err = checkDir(cfg.Env.ConfRoot, cfg.Env.Tpl)
-	if err != nil {
-		log.Fatalln(err)
 	}
 	return
 }

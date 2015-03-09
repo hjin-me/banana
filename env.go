@@ -7,12 +7,12 @@ import (
 
 type AppCfg struct {
 	Env struct {
-		ConfRoot string
+		ConfRoot string `banana:"relative"`
 		Port     string
 		Level    string
-		Tpl      string
+		Tpl      string `banana:"relative"`
 		Timeout  time.Duration
-		Statics  string
+		Statics  string `banana:"relative"`
 		Db       map[string]interface{}
 	}
 }
