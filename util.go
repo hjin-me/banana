@@ -5,31 +5,11 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"path/filepath"
 
 	"golang.org/x/net/context"
 )
-
-func App(args ...string) *MuxContext {
-	var (
-		ctx *MuxContext
-	)
-	if len(args) == 0 {
-		ctx = initial()
-	} else {
-		ctx = bootstrap(args[0])
-	}
-
-	go func() {
-		err := http.ListenAndServe(":"+ctx.Conf().Env.Port, ctx) //设置监听的端口
-		if err != nil {
-			log.Print(err)
-		}
-	}()
-	return ctx
-}
 
 func absFilepath(ctx context.Context, filename string) <-chan string {
 	ch := make(chan string)

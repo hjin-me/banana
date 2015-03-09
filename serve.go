@@ -69,6 +69,26 @@ func (p *MuxContext) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	return
 }
+
+func App(args ...string) *MuxContext {
+	var (
+		ctx *MuxContext
+	)
+	if len(args) == 0 {
+		ctx = initial()
+	} else {
+		ctx = bootstrap(args[0])
+	}
+
+	go func() {
+		err := http.ListenAndServe(":"+ctx.Conf().Env.Port, ctx) //设置监听的端口
+		if err != nil {
+			log.Print(err)
+		}
+	}()
+	return ctx
+}
+
 func initial() *MuxContext {
 	return bootstrap(flagParams())
 }
