@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"path/filepath"
 
 	"github.com/russross/blackfriday"
 )
@@ -16,6 +17,44 @@ var (
 	ErrTplNotExist  error              = errors.New("tpl not exist")
 	ErrTplParseFail error              = errors.New("tpl parse fail")
 )
+
+type themeConf map[string]string
+
+func loadThemeConf(filename string) (themeConf, error) {
+	x := make(themeConf)
+	err := Config(filename, &x)
+	dir := filepath.Dir(filename)
+	for k, v := range x {
+		x[k] = filepath.Join(dir, v)
+	}
+	return x, err
+}
+
+func LoadTheme(dir string) (t *template.Template, err error) {
+	cfg, err := loadThemeConf(filepath.Join(dir, "map.yaml"))
+	if err != nil {
+		return
+	}
+	themeName := filepath.Base(dir)
+	funcMaps := template.FuncMap{
+		"md": markDowner,
+	}
+	t = template.New("t:" + themeName).Funcs(funcMaps)
+
+	for name, path := range cfg {
+		b, err := ioutil.ReadFile(path)
+		if err != nil {
+			log.Println("load tpl failed:", err)
+			return t, err
+		}
+		t, err = t.New(name).Parse(string(b))
+		if err != nil {
+			log.Println("parse tpl:", err, name)
+			return t, err
+		}
+	}
+	return
+}
 
 func LoadTpl(path string) (*template.Template, string, error) {
 	var err error

@@ -71,24 +71,38 @@ func (c *httpContext) Json(data interface{}) {
 }
 
 func (c *httpContext) Tpl(path string, data interface{}) {
-	cfg, ok := c.Value("cfg").(AppCfg)
-	if !ok {
-		log.Println("configuration is not ok")
-		c.Output("configuration err", "text/plain")
-		return
-	}
-	tpl := filepath.Join(cfg.Env.Tpl, path)
+	ch := make(chan error)
+	go func() {
+		cfg, ok := c.Value("cfg").(AppCfg)
+		if !ok {
+			log.Println("configuration is not ok")
+			c.Output("configuration err", "text/plain")
+			return
+		}
+		name := filepath.Base(path)
+		themeDir := filepath.Dir(filepath.Join(cfg.Env.Tpl, path))
+		// theme := filepath.Base(themeDir)
+		h := c.Res().Header()
+		h.Add("content-type", "text/html")
+		t, err := LoadTheme(themeDir)
+
+		select {
+		case <-c.Done():
+			log.Println("request timeout", c.Err())
+		default:
+			if err != nil {
+				ch <- err
+			} else {
+				Render(c.Res(), t, name, data)
+			}
+		}
+
+	}()
 	select {
 	case <-c.Done():
 		log.Println("request timeout", c.Err())
-	default:
-		h := c.Res().Header()
-		h.Add("content-type", "text/html")
-		t, name, err := LoadTpl(tpl)
-		if err != nil {
-			c.Res().WriteHeader(http.StatusInternalServerError)
-			Render5xx(c.Res(), err)
-		}
-		Render(c.Res(), t, name, data)
+	case err := <-ch:
+		c.Res().WriteHeader(http.StatusInternalServerError)
+		Render5xx(c.Res(), err)
 	}
 }

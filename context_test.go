@@ -152,7 +152,6 @@ func TestContextTpl5xx(t *testing.T) {
 
 }
 
-/*
 func TestContextTpl(t *testing.T) {
 	prepare()
 
@@ -195,4 +194,3 @@ func TestContextTpl(t *testing.T) {
 	t.Logf("%s\n", greeting)
 
 }
-*/
