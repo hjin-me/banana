@@ -90,19 +90,20 @@ func (c *httpContext) Tpl(path string, data interface{}) {
 		case <-c.Done():
 			log.Println("request timeout", c.Err())
 		default:
-			if err != nil {
-				ch <- err
-			} else {
+			if err == nil {
 				Render(c.Res(), t, name, data)
 			}
+			ch <- err
 		}
-
 	}()
 	select {
 	case <-c.Done():
 		log.Println("request timeout", c.Err())
 	case err := <-ch:
-		c.Res().WriteHeader(http.StatusInternalServerError)
-		Render5xx(c.Res(), err)
+		log.Println("response complete")
+		if err != nil {
+			c.Res().WriteHeader(http.StatusInternalServerError)
+			Render5xx(c.Res(), err)
+		}
 	}
 }
