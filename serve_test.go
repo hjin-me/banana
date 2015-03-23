@@ -72,3 +72,28 @@ func TestTimeout(t *testing.T) {
 	}
 
 }
+
+func TestNotFound(t *testing.T) {
+
+	confFilename, _ := filepath.Abs("test/app.yaml")
+	cm := bootstrap(confFilename)
+
+	Get("/exists", func(ctx Context) {
+		ctx.Json(ctx.Params())
+	})
+
+	ts := httptest.NewServer(http.HandlerFunc(cm.ServeHTTP))
+	defer ts.Close()
+
+	res, err := http.Get(ts.URL + "/notExists")
+	if err != nil {
+		log.Fatal(err)
+	}
+	res.Body.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if res.StatusCode != http.StatusNotFound {
+		t.Error("status code ", res.StatusCode, "!=", http.StatusNotFound)
+	}
+}

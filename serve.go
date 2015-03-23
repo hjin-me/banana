@@ -37,6 +37,9 @@ func (p *MuxContext) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	defer cancel()
 
+	var (
+		ruleFound = false
+	)
 	for _, v := range list {
 		res := v.regex.FindStringSubmatch(r.URL.Path)
 
@@ -49,6 +52,7 @@ func (p *MuxContext) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		if len(res) > 0 {
+			ruleFound = true
 			go func() {
 				defer func() {
 					if err := recover(); err != nil {
@@ -63,9 +67,16 @@ func (p *MuxContext) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 	}
+	if !ruleFound {
+		timeout = false
+		cancel()
+	}
 	<-ctx.Done()
-	if timeout {
+	switch {
+	case timeout:
 		w.WriteHeader(http.StatusGatewayTimeout)
+	case !ruleFound:
+		w.WriteHeader(http.StatusNotFound)
 	}
 	return
 }
