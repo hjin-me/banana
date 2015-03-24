@@ -27,7 +27,7 @@ func TestConfig(t *testing.T) {
 		t.Error("cfg error", cfg)
 	}
 	x, _ := os.Getwd()
-	if cfg.Env.Tpl != filepath.Join(x, "test/views") {
+	if cfg.Env.Tpl != filepath.Join(x, "test/output") {
 		t.Error(cfg)
 	}
 

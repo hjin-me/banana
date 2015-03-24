@@ -1,0 +1,20 @@
+{
+    "res": {
+        "test:page/demo.html": {
+            "uri": "test/page/demo.html",
+            "type": "html",
+            "extras": {
+                "isPage": true
+            }
+        },
+        "test:static/css/demo.less": {
+            "uri": "/static/test/css/demo_22368c7.css",
+            "type": "css"
+        },
+        "test:static/lib/mod.js": {
+            "uri": "/static/test/lib/mod_df9079e.js",
+            "type": "js"
+        }
+    },
+    "pkg": {}
+}

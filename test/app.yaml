@@ -1,6 +1,6 @@
 env:
     port : 8088
     level: test
-    statics : statics
-    tpl: views
-    timeout : 30
+    statics : output/static/
+    tpl: output/
+    timeout : 3
