@@ -1,6 +1,7 @@
 package banana
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"html/template"
@@ -34,11 +35,18 @@ func LoadTheme(dir string) (t *template.Template, err error) {
 	fmConf := fisLoadMap(dir)
 
 	themeName := "t:banana"
+	t = template.New(themeName)
 	funcMaps := template.FuncMap{
 		"md":      markDowner,
 		"require": fisRequire,
+		"block": func(name string, data interface{}) (ret template.HTML, err error) {
+			buf := bytes.NewBuffer([]byte{})
+			err = t.ExecuteTemplate(buf, name, data)
+			ret = template.HTML(buf.String())
+			return
+		},
 	}
-	t = template.New(themeName).Funcs(funcMaps)
+	t.Funcs(funcMaps)
 
 	for name, fr := range fmConf.Res {
 		if !fr.IsPage() {
