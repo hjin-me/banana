@@ -12,15 +12,15 @@ var (
 
 func fisRequire(args ...interface{}) template.HTML {
 
-	extMap["js"] = "js"
-	extMap["css"] = "css"
-	extMap["less"] = "css"
+	extMap[".js"] = "js"
+	extMap[".css"] = "css"
+	extMap[".less"] = "css"
 	path, ok := args[0].(string)
 	if !ok {
 		panic("args[0] is not string")
 	}
 
-	tp, ok := extMap[filepath.Ext(path)]
+	tp := extMap[filepath.Ext(path)]
 	if !ok {
 		panic("unknown type [" + path + "]")
 	}

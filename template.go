@@ -37,7 +37,8 @@ func LoadTheme(dir string) (t *template.Template, err error) {
 	}
 	themeName := filepath.Base(dir)
 	funcMaps := template.FuncMap{
-		"md": markDowner,
+		"md":      markDowner,
+		"require": fisRequire,
 	}
 	t = template.New("t:" + themeName).Funcs(funcMaps)
 
