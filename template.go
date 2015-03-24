@@ -60,7 +60,8 @@ func LoadTpl(path string) (*template.Template, string, error) {
 	var err error
 
 	funcMaps := template.FuncMap{
-		"md": markDowner,
+		"md":      markDowner,
+		"require": fisRequire,
 	}
 	tc := template.New(path).Funcs(funcMaps)
 	b, err := ioutil.ReadFile(path)
