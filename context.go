@@ -79,9 +79,7 @@ func (c *httpContext) Tpl(path string, data interface{}) {
 			c.Output("configuration err", "text/plain")
 			return
 		}
-		name := filepath.Base(path)
-		themeDir := filepath.Dir(filepath.Join(cfg.Env.Tpl, path))
-		// theme := filepath.Base(themeDir)
+		themeDir := filepath.Join(cfg.Env.Tpl)
 		h := c.Res().Header()
 		h.Add("content-type", "text/html")
 		t, err := LoadTheme(themeDir)
@@ -91,7 +89,11 @@ func (c *httpContext) Tpl(path string, data interface{}) {
 			log.Println("request timeout", c.Err())
 		default:
 			if err == nil {
-				Render(c.Res(), t, name, data)
+				if TplExists(path) {
+					Render(c.Res(), t, path, data)
+				} else {
+					err = ErrTplNotExist
+				}
 			}
 			ch <- err
 		}

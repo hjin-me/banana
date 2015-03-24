@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -135,6 +136,7 @@ func TestContextTpl5xx(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Logf("%s\n", greeting)
 	if res.StatusCode != http.StatusInternalServerError {
 		t.Error("status code ", res.StatusCode, "!=", http.StatusInternalServerError)
 	}
@@ -145,7 +147,6 @@ func TestContextTpl5xx(t *testing.T) {
 	if ct[0] != testContentType {
 		t.Error("Content Type not", testContentType)
 	}
-	t.Logf("%s\n", greeting)
 	if string(greeting) != string(testHtml) {
 		t.Error("response error")
 	}
@@ -160,14 +161,13 @@ func TestContextTpl(t *testing.T) {
 		Num   []int
 	}
 	testData := TD{"world", []int{3, 2, 1}}
-	testHtml := "Template file error"
 	testContentType := "text/html"
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rawCtx, _ := context.WithTimeout(baseCtx, time.Second)
 
 		ctx := WithHttp(rawCtx, w, r, map[string]string{})
-		ctx.Tpl("abc.tpl", testData)
+		ctx.Tpl("test:page/demo.html", testData)
 	}))
 	defer ts.Close()
 
@@ -180,6 +180,7 @@ func TestContextTpl(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Logf("%s\n", greeting)
 	ct, ok := res.Header["Content-Type"]
 	if !ok {
 		t.Error("Response no Content-Type")
@@ -187,10 +188,8 @@ func TestContextTpl(t *testing.T) {
 	if ct[0] != testContentType {
 		t.Error("Content Type not", testContentType)
 	}
-	if string(greeting) != string(testHtml) {
+	if !strings.Contains(string(greeting), "DOCTYPE html") {
 		t.Error("response error", string(greeting))
 	}
-
-	t.Logf("%s\n", greeting)
 
 }

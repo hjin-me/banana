@@ -31,19 +31,20 @@ func loadThemeConf(filename string) (themeConf, error) {
 }
 
 func LoadTheme(dir string) (t *template.Template, err error) {
-	cfg, err := loadThemeConf(filepath.Join(dir, "map.yaml"))
-	if err != nil {
-		return
-	}
-	themeName := filepath.Base(dir)
+	fmConf := fisLoadMap(dir)
+
+	themeName := "t:banana"
 	funcMaps := template.FuncMap{
 		"md":      markDowner,
 		"require": fisRequire,
 	}
-	t = template.New("t:" + themeName).Funcs(funcMaps)
+	t = template.New(themeName).Funcs(funcMaps)
 
-	for name, path := range cfg {
-		b, err := ioutil.ReadFile(path)
+	for name, fr := range fmConf.Res {
+		if !fr.IsPage() {
+			continue
+		}
+		b, err := ioutil.ReadFile(fr.URI)
 		if err != nil {
 			log.Println("load tpl failed:", err)
 			return t, err
@@ -85,7 +86,10 @@ func Render5xx(w io.Writer, err error) {
 }
 
 func Render(w io.Writer, t *template.Template, name string, data interface{}) {
-	t.ExecuteTemplate(w, name, data)
+	err := t.ExecuteTemplate(w, name, data)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func markDowner(args ...interface{}) template.HTML {

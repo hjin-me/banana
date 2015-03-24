@@ -12,10 +12,6 @@ import (
 	"golang.org/x/net/context"
 )
 
-var (
-	extMap = make(map[string]string)
-)
-
 type FisRes struct {
 	URI    string                 `json:"uri""`
 	Type   string                 `json:"type"`
@@ -25,6 +21,18 @@ type FisRes struct {
 type FisMap struct {
 	Res map[string]FisRes `json:"res"`
 	Pkg struct{}          `json:"pkg"`
+}
+
+func (fr FisRes) IsPage() bool {
+	b, ok := fr.Extras["isPage"]
+	if !ok {
+		return false
+	}
+	t, ok := b.(bool)
+	if !ok {
+		return false
+	}
+	return t
 }
 
 func fisScanMapDir(ctx context.Context, dir string) <-chan string {
@@ -76,7 +84,7 @@ func fisParseMap(ctx context.Context, ch <-chan string) <-chan FisMap {
 	}()
 	return fmCh
 }
-func fisMergeMap(ctx context.Context, chs ...<-chan FisMap) FisMap {
+func fisMergeMap(ctx context.Context, dir string, chs ...<-chan FisMap) FisMap {
 	gFM := FisMap{make(map[string]FisRes), struct{}{}}
 	var wg sync.WaitGroup
 	wg.Add(len(chs))
@@ -84,6 +92,9 @@ func fisMergeMap(ctx context.Context, chs ...<-chan FisMap) FisMap {
 	handle := func(ch <-chan FisMap) {
 		for fm := range ch {
 			for k, v := range fm.Res {
+				if v.IsPage() {
+					v.URI = filepath.Join(dir, v.URI)
+				}
 				gFM.Res[k] = v
 			}
 		}
@@ -100,34 +111,38 @@ func fisMergeMap(ctx context.Context, chs ...<-chan FisMap) FisMap {
 
 var globalFisMap FisMap
 
-func fisLoadMap(dir string) {
+func fisLoadMap(dir string) FisMap {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	in := fisScanMapDir(ctx, dir)
-	globalFisMap = fisMergeMap(ctx, fisParseMap(ctx, in), fisParseMap(ctx, in))
+	in := fisScanMapDir(ctx, filepath.Join(dir, "config"))
+	globalFisMap = fisMergeMap(ctx, filepath.Join(dir, "template"), fisParseMap(ctx, in), fisParseMap(ctx, in))
+	return globalFisMap
 }
 
 func fisRequire(args ...interface{}) template.HTML {
 
-	extMap[".js"] = "js"
-	extMap[".css"] = "css"
-	extMap[".less"] = "css"
-	path, ok := args[0].(string)
+	m, ok := args[0].(string)
 	if !ok {
 		panic("args[0] is not string")
 	}
 
-	tp := extMap[filepath.Ext(path)]
+	v, ok := globalFisMap.Res[m]
 	if !ok {
-		panic("unknown type [" + path + "]")
+		panic("resource not found [" + m + "]")
 	}
 	s := ""
-	switch tp {
+
+	switch v.Type {
 	case "js":
-		s = fmt.Sprintf("<script src=\"%s\"></script>", path)
+		s = fmt.Sprintf("<script src=\"%s\"></script>", v.URI)
 	case "css":
-		s = fmt.Sprintf("<link type=\"text/css\" rel=\"stylesheet\" href=\"%s\">", path)
+		s = fmt.Sprintf("<link type=\"text/css\" rel=\"stylesheet\" href=\"%s\">", v.URI)
 	}
 
 	return template.HTML(s)
+}
+
+func TplExists(base string) bool {
+	_, ok := globalFisMap.Res[base]
+	return ok
 }
