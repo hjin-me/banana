@@ -142,6 +142,20 @@ func fisRequire(args ...interface{}) template.HTML {
 	return template.HTML(s)
 }
 
+func fisURI(args ...interface{}) template.HTML {
+	m, ok := args[0].(string)
+	if !ok {
+		panic("args[0] is not string")
+	}
+
+	v, ok := globalFisMap.Res[m]
+	if !ok {
+		panic("resource not found [" + m + "]")
+	}
+
+	return template.HTML(v.URI)
+}
+
 func TplExists(base string) bool {
 	_, ok := globalFisMap.Res[base]
 	return ok

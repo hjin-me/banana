@@ -39,6 +39,7 @@ func LoadTheme(dir string) (t *template.Template, err error) {
 	funcMaps := template.FuncMap{
 		"md":      markDowner,
 		"require": fisRequire,
+		"uri":     fisURI,
 		"block": func(name string, data interface{}) (ret template.HTML, err error) {
 			buf := bytes.NewBuffer([]byte{})
 			err = t.ExecuteTemplate(buf, name, data)
