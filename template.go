@@ -72,15 +72,16 @@ func LoadTpl(path string) (x *template.Template, y string, z error) {
 	return
 }
 
-func Render5xx(w io.Writer, err error) {
-	t5xx.Execute(w, err.Error())
+func Render5xx(w io.Writer, err error) error {
+	e := t5xx.Execute(w, err.Error())
+	if e != nil {
+		return e
+	}
+	return err
 }
 
-func Render(w io.Writer, t *template.Template, name string, data interface{}) {
-	err := t.ExecuteTemplate(w, name, data)
-	if err != nil {
-		panic(err)
-	}
+func Render(w io.Writer, t *template.Template, name string, data interface{}) error {
+	return t.ExecuteTemplate(w, name, data)
 }
 
 func markDowner(args ...interface{}) template.HTML {

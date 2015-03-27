@@ -16,8 +16,9 @@ func TestCustomMuxHttpHandle(t *testing.T) {
 
 	confFilename, _ := filepath.Abs("test/app.yaml")
 	cm := bootstrap(confFilename)
-	Get("/test/:x", func(ctx Context) {
+	Get("/test/:x", func(ctx Context) error {
 		ctx.Json(ctx.Params())
+		return nil
 	})
 
 	ts := httptest.NewServer(http.HandlerFunc(cm.ServeHTTP))
@@ -51,9 +52,10 @@ func TestTimeout(t *testing.T) {
 
 	confFilename, _ := filepath.Abs("test/app.yaml")
 	cm := bootstrap(confFilename)
-	Get("/test/:x", func(ctx Context) {
+	Get("/test/:x", func(ctx Context) error {
 		time.Sleep(10 * time.Second)
 		ctx.Json(ctx.Params())
+		return nil
 	})
 
 	ts := httptest.NewServer(http.HandlerFunc(cm.ServeHTTP))
@@ -78,8 +80,9 @@ func TestNotFound(t *testing.T) {
 	confFilename, _ := filepath.Abs("test/app.yaml")
 	cm := bootstrap(confFilename)
 
-	Get("/exists", func(ctx Context) {
+	Get("/exists", func(ctx Context) error {
 		ctx.Json(ctx.Params())
+		return nil
 	})
 
 	ts := httptest.NewServer(http.HandlerFunc(cm.ServeHTTP))

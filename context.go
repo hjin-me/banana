@@ -2,6 +2,7 @@ package banana
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -15,9 +16,9 @@ type Context interface {
 	Res() http.ResponseWriter
 	Req() *http.Request
 	Params() map[string]string
-	Output(interface{}, string)
-	Json(interface{})
-	Tpl(string, interface{})
+	Output(interface{}, string) error
+	Json(interface{}) error
+	Tpl(string, interface{}) error
 }
 
 type httpContext struct {
@@ -43,24 +44,25 @@ func (c *httpContext) Params() map[string]string {
 	return c.p
 }
 
-func (c *httpContext) Output(data interface{}, contentType string) {
+func (c *httpContext) Output(data interface{}, contentType string) (err error) {
 	res := c.Res()
 
 	select {
 	case <-c.Done():
-		log.Println("request timeout", c.Err())
+		err = c.Err()
 	default:
 		h := res.Header()
 		h.Add("content-type", contentType)
 		fmt.Fprintf(res, "%s", data)
 	}
+	return
 }
 
-func (c *httpContext) Json(data interface{}) {
+func (c *httpContext) Json(data interface{}) (err error) {
 	res := c.Res()
 	select {
 	case <-c.Done():
-		log.Println("request timeout", c.Err())
+		err = c.Err()
 	default:
 		h := res.Header()
 		h.Add("content-type", "application/json")
@@ -68,15 +70,16 @@ func (c *httpContext) Json(data interface{}) {
 		str, _ := json.Marshal(data)
 		fmt.Fprintf(res, "%s", str)
 	}
+	return
 }
 
-func (c *httpContext) Tpl(path string, data interface{}) {
+func (c *httpContext) Tpl(path string, data interface{}) (err error) {
 	ch := make(chan error)
 	go func() {
 		cfg, ok := c.Value("cfg").(AppCfg)
 		if !ok {
 			log.Println("configuration is not ok")
-			c.Output("configuration err", "text/plain")
+			err = errors.New("configuration err")
 			return
 		}
 		themeDir := filepath.Join(cfg.Env.Tpl)
@@ -86,11 +89,11 @@ func (c *httpContext) Tpl(path string, data interface{}) {
 
 		select {
 		case <-c.Done():
-			log.Println("request timeout", c.Err())
+			err = c.Err()
 		default:
 			if err == nil {
 				if TplExists(path) {
-					Render(c.Res(), t, path, data)
+					err = Render(c.Res(), t, path, data)
 				} else {
 					err = ErrTplNotExist
 				}
@@ -100,12 +103,12 @@ func (c *httpContext) Tpl(path string, data interface{}) {
 	}()
 	select {
 	case <-c.Done():
-		log.Println("request timeout", c.Err())
-	case err := <-ch:
-		log.Println("response complete")
+		err = c.Err()
+	case err = <-ch:
 		if err != nil {
 			c.Res().WriteHeader(http.StatusInternalServerError)
 			Render5xx(c.Res(), err)
 		}
 	}
+	return
 }

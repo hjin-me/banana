@@ -12,7 +12,7 @@ type routeInfo struct {
 	nameList   []string
 }
 
-type ControllerType func(ctx Context)
+type ControllerType func(ctx Context) error
 
 var routeList map[string][]routeInfo
 
@@ -80,11 +80,12 @@ func File(prefix string, dir string) {
 		routeList[method] = []routeInfo{}
 	}
 
-	fn := func(ctx Context) {
+	fn := func(ctx Context) error {
 		w := ctx.Res()
 		r := ctx.Req()
 
 		fsfn(w, r)
+		return nil
 	}
 
 	nameList := []string{}

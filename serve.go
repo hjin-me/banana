@@ -19,8 +19,20 @@ func (p *MuxContext) Conf() AppCfg {
 }
 
 func (p *MuxContext) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	startTime := time.Now()
+	statusCode := http.StatusOK
+	var err interface{}
+	defer func() {
+		endTime := time.Now()
+		if err == nil {
+			err = ""
+		}
+		log.Printf("%d %0.3f [%s] [%s] [%s]", statusCode, float32(endTime.Sub(startTime))/float32(time.Second), r.URL.Path, r.URL.RawQuery, err)
+	}()
+
 	list, exist := routeList[r.Method]
 	if !exist {
+		statusCode = http.StatusNotFound
 		http.NotFound(w, r)
 		return
 	}
@@ -55,14 +67,17 @@ func (p *MuxContext) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			ruleFound = true
 			go func() {
 				defer func() {
-					if err := recover(); err != nil {
-						log.Println(err)
-						w.WriteHeader(http.StatusInternalServerError)
+					if err = recover(); err != nil {
+						statusCode = http.StatusInternalServerError
+						w.WriteHeader(statusCode)
 					}
 					timeout = false
 					cancel()
 				}()
-				v.controller(WithHttp(ctx, w, r, params))
+				e := v.controller(WithHttp(ctx, w, r, params))
+				if e != nil {
+					panic(e)
+				}
 			}()
 			break
 		}
@@ -74,9 +89,12 @@ func (p *MuxContext) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	<-ctx.Done()
 	switch {
 	case timeout:
-		w.WriteHeader(http.StatusGatewayTimeout)
+		err = ctx.Err()
+		statusCode = http.StatusGatewayTimeout
+		w.WriteHeader(statusCode)
 	case !ruleFound:
-		w.WriteHeader(http.StatusNotFound)
+		statusCode = http.StatusNotFound
+		w.WriteHeader(statusCode)
 	}
 	return
 }
