@@ -119,7 +119,7 @@ func fisLoadMap(dir string) FisMap {
 	return globalFisMap
 }
 
-func fisRequire(args ...interface{}) template.HTML {
+func fisLink(args ...interface{}) template.HTML {
 
 	m, ok := args[0].(string)
 	if !ok {

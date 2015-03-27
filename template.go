@@ -37,9 +37,9 @@ func LoadTheme(dir string) (t *template.Template, err error) {
 	themeName := "t:banana"
 	t = template.New(themeName)
 	funcMaps := template.FuncMap{
-		"md":      markDowner,
-		"require": fisRequire,
-		"uri":     fisURI,
+		"md":   markDowner,
+		"link": fisLink,
+		"uri":  fisURI,
 		"block": func(name string, data interface{}) (ret template.HTML, err error) {
 			buf := bytes.NewBuffer([]byte{})
 			err = t.ExecuteTemplate(buf, name, data)
@@ -67,27 +67,9 @@ func LoadTheme(dir string) (t *template.Template, err error) {
 	return
 }
 
-func LoadTpl(path string) (*template.Template, string, error) {
-	var err error
-
-	funcMaps := template.FuncMap{
-		"md":      markDowner,
-		"require": fisRequire,
-	}
-	tc := template.New(path).Funcs(funcMaps)
-	b, err := ioutil.ReadFile(path)
-	if err != nil {
-		log.Println("load tpl failed:", err)
-		return t5xx, "", ErrTplNotExist
-	}
-	s := string(b)
-
-	tc, err = tc.Parse(s)
-	if err != nil {
-		log.Println("load tpl failed:", err)
-		return t5xx, "", ErrTplParseFail
-	}
-	return tc, path, nil
+func LoadTpl(path string) (x *template.Template, y string, z error) {
+	panic("depreate func LoadTpl")
+	return
 }
 
 func Render5xx(w io.Writer, err error) {
