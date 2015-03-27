@@ -1,6 +1,7 @@
 package banana
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -74,6 +75,7 @@ func (c *httpContext) Json(data interface{}) (err error) {
 }
 
 func (c *httpContext) Tpl(path string, data interface{}) (err error) {
+	var bf bytes.Buffer
 	ch := make(chan error)
 	go func() {
 		cfg, ok := c.Value("cfg").(AppCfg)
@@ -92,12 +94,9 @@ func (c *httpContext) Tpl(path string, data interface{}) (err error) {
 			err = c.Err()
 		default:
 			if err == nil {
-				if TplExists(path) {
-					err = Render(c.Res(), t, path, data)
-				} else {
-					err = ErrTplNotExist
-				}
+				bf, err = Render(t, path, data)
 			}
+
 			ch <- err
 		}
 	}()
@@ -105,9 +104,8 @@ func (c *httpContext) Tpl(path string, data interface{}) (err error) {
 	case <-c.Done():
 		err = c.Err()
 	case err = <-ch:
-		if err != nil {
-			c.Res().WriteHeader(http.StatusInternalServerError)
-			Render5xx(c.Res(), err)
+		if err == nil {
+			fmt.Fprintf(c.Res(), "%s", bf)
 		}
 	}
 	return

@@ -116,14 +116,20 @@ func TestContextTpl5xx(t *testing.T) {
 		Num   []int
 	}
 	testData := TD{"world", []int{3, 2, 1}}
-	testHtml := "Template file error"
 	testContentType := "text/html"
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rawCtx, _ := context.WithTimeout(baseCtx, time.Second)
 
 		ctx := WithHttp(rawCtx, w, r, map[string]string{})
-		ctx.Tpl("abc.tpl", testData)
+		err := ctx.Tpl("abc.tpl", testData)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		if err == nil {
+			t.Log(err)
+			t.Error("should return an error")
+		}
 	}))
 	defer ts.Close()
 
@@ -136,7 +142,6 @@ func TestContextTpl5xx(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Logf("%s\n", greeting)
 	if res.StatusCode != http.StatusInternalServerError {
 		t.Error("status code ", res.StatusCode, "!=", http.StatusInternalServerError)
 	}
@@ -147,7 +152,7 @@ func TestContextTpl5xx(t *testing.T) {
 	if ct[0] != testContentType {
 		t.Error("Content Type not", testContentType)
 	}
-	if string(greeting) != string(testHtml) {
+	if string(greeting) != "" {
 		t.Error("response error")
 	}
 

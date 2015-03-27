@@ -80,8 +80,9 @@ func Render5xx(w io.Writer, err error) error {
 	return err
 }
 
-func Render(w io.Writer, t *template.Template, name string, data interface{}) error {
-	return t.ExecuteTemplate(w, name, data)
+func Render(t *template.Template, name string, data interface{}) (bf bytes.Buffer, err error) {
+	err = t.ExecuteTemplate(&bf, name, data)
+	return
 }
 
 func markDowner(args ...interface{}) template.HTML {
