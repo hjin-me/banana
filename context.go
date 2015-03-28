@@ -105,7 +105,7 @@ func (c *httpContext) Tpl(path string, data interface{}) (err error) {
 		err = c.Err()
 	case err = <-ch:
 		if err == nil {
-			fmt.Fprintf(c.Res(), "%s", bf)
+			bf.WriteTo(c.Res())
 		}
 	}
 	return
