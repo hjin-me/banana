@@ -20,7 +20,11 @@ var (
 func prepare() {
 
 	confFilename, _ := filepath.Abs("test/app.yaml")
-	cfg := loadCfg(confFilename)
+	cfg := AppCfg{}
+	_, err := Config(confFilename, &cfg)
+	if err != nil {
+		panic(err)
+	}
 	baseCtx = context.WithValue(context.Background(), "cfg", cfg)
 }
 

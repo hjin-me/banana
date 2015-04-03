@@ -3,6 +3,7 @@ package banana
 import (
 	"log"
 	"net/http"
+	"path/filepath"
 	"runtime"
 	"time"
 
@@ -125,8 +126,13 @@ func initial() *MuxContext {
 func bootstrap(confFilename string) *MuxContext {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	routeList = make(map[string][]routeInfo)
+	cfg := AppCfg{}
 
-	cfg := loadCfg(confFilename)
+	absFilename, err := Config(confFilename, &cfg)
+	if err != nil {
+		panic(err)
+	}
+	setBaseDir(filepath.Dir(absFilename))
 
 	return &MuxContext{context.WithValue(context.Background(), "cfg", cfg)}
 }

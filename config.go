@@ -16,6 +16,7 @@ import (
 var (
 	configCacheMap map[string][]byte = make(map[string][]byte)
 	mutex          *sync.Mutex       = &sync.Mutex{}
+	baseConfDir    string
 )
 
 func configScan(v reflect.Value, base string) {
@@ -50,7 +51,11 @@ func configUnmarshal(bf []byte, data interface{}, filename string) (err error) {
 	return
 }
 
-func Config(filename string, data interface{}) (err error) {
+func setBaseDir(dir string) {
+	baseConfDir = dir
+}
+
+func Config(filename string, data interface{}) (absFilename string, err error) {
 	bf, ok := configCacheMap[filename]
 	if !ok {
 		mutex.Lock()
@@ -63,26 +68,27 @@ func Config(filename string, data interface{}) (err error) {
 		select {
 		case filename = <-absFilepath(ctx, filename):
 		case filename = <-relativeFilepath(ctx, pwd, filename):
-		// case filename = <-confFilepath(ctx, filename):
+		case filename = <-relativeFilepath(ctx, baseConfDir, filename):
 		case <-ctx.Done():
 			err := errors.New("cant find file [" + filename + "]")
-			return err
+			return "", err
 		}
 		f, err := os.Open(filename)
 		if err != nil {
-			return err
+			return "", err
 		}
 		defer f.Close()
 		bf, err = ioutil.ReadAll(f)
 		if err != nil {
-			return err
+			return "", err
 		}
 		configCacheMap[filename] = bf
+		absFilename = filename
 	}
 
 	err = configUnmarshal(bf, data, filename)
 	if err != nil {
-		return err
+		return "", err
 	}
 	return
 }

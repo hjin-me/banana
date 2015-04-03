@@ -99,17 +99,20 @@ func checkDir(base, in string) (string, error) {
 
 	return in, nil
 }
+
+/*
 func loadCfg(filename string) (cfg AppCfg) {
 	filename, err := filepath.Abs(filename)
 	if err != nil {
 		log.Fatalln("config file path error", err)
 	}
-	err = Config(filename, &cfg)
+	_, err = Config(filename, &cfg)
 	if err != nil {
 		log.Fatalln("load config fail", err)
 	}
 	return
 }
+*/
 
 func flagParams() (confFilename string) {
 	f := flag.NewFlagSet("params", flag.ExitOnError)

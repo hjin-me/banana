@@ -19,7 +19,8 @@ func TestConfig(t *testing.T) {
 		}
 	}
 	cfg := TestAppYaml{}
-	err = Config("test/app.yaml", &cfg)
+	// pwd log
+	_, err = Config("test/app.yaml", &cfg)
 	if err != nil {
 		t.Error(err)
 	}
@@ -31,7 +32,33 @@ func TestConfig(t *testing.T) {
 		t.Error(cfg)
 	}
 
-	err = Config("test", &cfg)
+	type TestYaml struct {
+		Abs  string `yaml:"abs"`
+		Conf string `yaml:"conf"`
+	}
+	tcfg := TestYaml{}
+	// absolute log
+	filename, _ := filepath.Abs("test/abs.yaml")
+	_, err = Config(filename, &tcfg)
+	if err != nil {
+		t.Error(err)
+	}
+	if tcfg.Abs != "hello" {
+		t.Error("abs cfg err", tcfg)
+	}
+
+	// conf base log
+	setBaseDir(filepath.Dir(filename))
+	_, err = Config("conf.yaml", &tcfg)
+	if err != nil {
+		t.Error(err)
+	}
+	if tcfg.Conf != "world" {
+		t.Error("conf base cfg err", tcfg)
+	}
+
+	// not exists log
+	_, err = Config("test", &cfg)
 	if err == nil {
 		t.Error("should cause an error")
 	}

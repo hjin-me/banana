@@ -23,7 +23,7 @@ type themeConf map[string]string
 
 func loadThemeConf(filename string) (themeConf, error) {
 	x := make(themeConf)
-	err := Config(filename, &x)
+	_, err := Config(filename, &x)
 	dir := filepath.Dir(filename)
 	for k, v := range x {
 		x[k] = filepath.Join(dir, v)
