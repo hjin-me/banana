@@ -51,7 +51,7 @@ func configUnmarshal(bf []byte, data interface{}, filename string) (err error) {
 	return
 }
 
-func setBaseDir(dir string) {
+func SetBaseDir(dir string) {
 	baseConfDir = dir
 }
 

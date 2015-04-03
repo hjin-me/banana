@@ -132,7 +132,7 @@ func bootstrap(confFilename string) *MuxContext {
 	if err != nil {
 		panic(err)
 	}
-	setBaseDir(filepath.Dir(absFilename))
+	SetBaseDir(filepath.Dir(absFilename))
 
 	return &MuxContext{context.WithValue(context.Background(), "cfg", cfg)}
 }

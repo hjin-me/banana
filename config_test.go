@@ -48,7 +48,7 @@ func TestConfig(t *testing.T) {
 	}
 
 	// conf base log
-	setBaseDir(filepath.Dir(filename))
+	SetBaseDir(filepath.Dir(filename))
 	_, err = Config("conf.yaml", &tcfg)
 	if err != nil {
 		t.Error(err)
