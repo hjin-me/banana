@@ -109,13 +109,18 @@ func fisMergeMap(ctx context.Context, dir string, chs ...<-chan FisMap) FisMap {
 	return gFM
 }
 
-var globalFisMap FisMap
+var (
+	globalFisMap FisMap
+	mapOnce      sync.Once
+)
 
 func fisLoadMap(dir string) FisMap {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	in := fisScanMapDir(ctx, filepath.Join(dir, "config"))
-	globalFisMap = fisMergeMap(ctx, filepath.Join(dir, "template"), fisParseMap(ctx, in), fisParseMap(ctx, in))
+	mapOnce.Do(func() {
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		in := fisScanMapDir(ctx, filepath.Join(dir, "config"))
+		globalFisMap = fisMergeMap(ctx, filepath.Join(dir, "template"), fisParseMap(ctx, in), fisParseMap(ctx, in))
+	})
 	return globalFisMap
 }
 
